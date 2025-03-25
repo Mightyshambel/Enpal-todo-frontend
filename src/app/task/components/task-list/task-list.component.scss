@@ -1,0 +1,60 @@
+.container {
+    display: flex;
+    justify-content: center;
+    padding-top: 30px;
+    margin-top:60px;
+}
+
+.card-layout {
+  width: 500px;
+  border-radius: 12px !important;  
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important; 
+  margin: 24px; 
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    @include mat.elevation(6);
+  }
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-card-header {
+    background-color: green;
+    color: white;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 20px;
+}
+
+.listing {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.form-container{
+    background-color: rgb(240, 255, 240);
+    padding-top: 20px;
+}
+.edit{
+    color: #2f2ff5;
+    cursor: pointer;
+}
+.delete{
+    color: rgb(246, 59, 59);
+    cursor: pointer;
+}
+.error-container {
+  display: flex;
+  justify-content: center;
+  p {
+    color: red;
+  }
+}
+
+.crossover {
+  text-decoration: line-through;
+}
