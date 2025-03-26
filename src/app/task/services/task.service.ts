@@ -1,9 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
 import { environment } from '../../../../enviroment';
 import id from '@angular/common/locales/id';
+
+interface ITodo {
+  id: string;
+  description: string;
+  done: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -12,22 +17,30 @@ export class TaskService {
 
   constructor(private http: HttpClient) {}
   
-  getTasks(): Observable<any> {
-    return this.http.get(`${environment.baseUrl}/getTasks`) ;
+  getTasks(): Observable<ITodo[]> {
+    return this.http.get<ITodo[]>(`${environment.baseUrl}/task`) ;
   }
-  getTaskById(): Observable<any> {
-    return this.http.get(`${environment.baseUrl}/getTaskById${id}`) ;
-  }
-
-  addTask(description: string): Observable<any> {
-    return this.http.post(`${environment.baseUrl}/createTask`, { description });
+  getTaskById(): Observable<ITodo[]> {
+    return this.http.get<ITodo[]>(`${environment.baseUrl}/task/${id}`) ;
   }
 
-  updateTask(id: string, done: boolean): Observable<any> {
-    return this.http.patch(`${environment.baseUrl}/updateTask${id}`, { done });
+  addTask(task: ITodo): Observable<ITodo> {
+    return this.http.post<ITodo>(`${environment.baseUrl}/task`, task)
   }
 
-  deleteTask(id: string): Observable<any> {
-    return this.http.delete(`${environment.baseUrl}/deleteTask${id}`);
+  updateTask(task: ITodo): Observable<ITodo> {
+    const updateData = {
+      description: task.description,
+      done: task.done
+    };
+    
+    return this.http.patch<ITodo>(
+      `${environment.baseUrl}/task/${task.id}`,
+      updateData
+    );
+  }
+
+  deleteTask(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.baseUrl}/task/${id}`);
   }
 }

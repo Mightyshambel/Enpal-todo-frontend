@@ -1,15 +1,15 @@
-import { Component, inject, model, signal, Signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
 import { TaskService } from '../../services/task.service';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 interface ITodo {
   id: string;
@@ -19,58 +19,68 @@ interface ITodo {
 
 @Component({
   selector: 'app-task-list',
-  templateUrl: '../task-list/task-list.component.html',
-  styleUrl: '../task-list/task-list.component.scss',
+  templateUrl: './task-list.component.html',
+  styleUrls: ['./task-list.component.scss'],
+  standalone: true,
   imports: [
     MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule,
-    MatCardModule, MatCheckboxModule, FormsModule, CommonModule, MatDialogModule
+    MatCardModule, MatCheckboxModule, CommonModule, MatDialogModule,
+    ReactiveFormsModule
   ]
 })
 export class TaskListComponent {
-  todoList = signal<ITodo[]>([]);
-  description = model('');
+  todoList: ITodo[] = [];
+  description = new FormControl('');
   selectedIndex: number = -1;
-  taskService = inject(TaskService);
+
+  constructor(private taskService: TaskService) {}
   dialog = inject(MatDialog);
 
   ngOnInit(): void {
     this.loadAllTasks();
   }
 
-  loadAllTasks(): void {
-    this.taskService.getTasks().subscribe((res: any) => {
-      this.todoList.set(res.data);
+  loadAllTasks() {
+    this.taskService.getTasks().subscribe({
+      next: (data: ITodo[]) => this.todoList = data,
+      error: (err) => console.error('Error loading tasks', err)
     });
   }
 
   save(): void {
-    if (!this.description().trim()) {
-      return;
-    }
-    
-    this.taskService.addTask(this.description()).subscribe((res: any) => {
-      this.todoList.update(list => [...list, res.data]);
-      this.description.set('');
+    const taskDescription = this.description.value?.trim();
+    if (!taskDescription) return;
+
+    const newTask: ITodo = {
+      id: crypto.randomUUID(),
+      description: taskDescription,
+      done: false
+    };
+
+    this.taskService.addTask(newTask).subscribe({
+      next: (task) => {
+        this.todoList.push(task);
+        this.description.reset();
+      },
+      error: (err) => console.error('Save error:', err)
     });
   }
 
-  checkmarkChanged(index: number): void {
-    const task = this.todoList()[index];
-    this.taskService.updateTask(task.id, !task.done).subscribe(() => {
-      this.todoList.update(list => {
-        list[index].done = !task.done;
-        return list;
-      });
+  checkmarkChanged(task: ITodo): void {
+    this.taskService.updateTask(task).subscribe({
+      next: () => task.done = !task.done,
+      error: (err) => console.error('Update error:', err)
     });
   }
 
   deleteConfirmation(index: number): void {
-    const task = this.todoList()[index];
+    const task = this.todoList[index];
     this.dialog.open(ConfirmationDialogComponent, { width: '250px' })
       .afterClosed().subscribe((res: any) => {
         if (res === 'YES') {
-          this.taskService.deleteTask(task.id).subscribe(() => {
-            this.todoList.update(list => list.filter((_, i) => i !== index));
+          this.taskService.deleteTask(task.id).subscribe({
+            next: () => this.todoList.splice(index, 1),
+            error: (err) => console.error('Delete error:', err)
           });
         }
       });
@@ -78,20 +88,32 @@ export class TaskListComponent {
 
   editItem(index: number, item: ITodo): void {
     this.selectedIndex = index;
-    this.description.set(item.description);
+    this.description.setValue(item.description);
   }
 
   updateItem(): void {
     if (this.selectedIndex >= 0) {
-      const task = this.todoList()[this.selectedIndex];
+      const updatedDescription = this.description.value?.trim();
+      if (!updatedDescription) return;
+  
+      const originalTask = this.todoList[this.selectedIndex];
       
-      this.taskService.updateTask(task.id, task.done).subscribe(() => {
-        this.todoList.update(list => {
-          list[this.selectedIndex].description = this.description();
-          return list;
-        });
-        this.description.set('');
-        this.selectedIndex = -1;
+      // Create update payload
+      const updatePayload = {
+        ...originalTask,
+        description: updatedDescription
+      };
+  
+      this.taskService.updateTask(updatePayload).subscribe({
+        next: (updatedTask) => {
+          this.todoList[this.selectedIndex] = updatedTask;
+          this.description.reset();
+          this.selectedIndex = -1;
+        },
+        error: (err) => {
+          console.error('Update error:', err);
+          this.todoList[this.selectedIndex] = originalTask;
+        }
       });
     }
   }

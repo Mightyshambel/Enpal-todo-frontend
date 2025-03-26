@@ -5,34 +5,54 @@
     </mat-card-header>
 
     <mat-card-content class="form-container">
-      <div *ngIf="selectedIndex >= 0" class="error-container">
-        <p>Editing task</p>
+      <div *ngIf="selectedIndex >= 0" class="editing-indicator">
+        <p>✎ Editing task</p>
       </div>
 
-      <div>
-        <mat-form-field appearance="outline">
-          <mat-label>Add task</mat-label>
-          <input matInput [(ngModel)]="description">
-          <mat-icon matSuffix (click)="selectedIndex >= 0 ? updateItem() : save()">
+      <div class="input-section">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Add Task</mat-label>
+          <input matInput [formControl]="description" placeholder="Enter task description">
+          <mat-icon matSuffix 
+                   (click)="selectedIndex >= 0 ? updateItem() : save()"
+                   [attr.aria-label]="selectedIndex >= 0 ? 'Save changes' : 'Add new task'">
             {{ selectedIndex >= 0 ? 'save_as' : 'save' }}
           </mat-icon>
         </mat-form-field>
+      </div>
 
-        <div *ngFor="let item of todoList(); let i = index" class="listing">
-          <div>
-            <mat-checkbox (click)="checkmarkChanged(i)" [disabled]="selectedIndex >= 0">
-              <span [ngClass]="item.done ? 'crossover' : ''">{{ item.description }}</span>
+      <div class="tasks-list">
+        <div *ngFor="let item of todoList; let i = index" 
+             class="task-item"
+             [class.editing]="selectedIndex === i">
+          
+          <div class="task-content">
+            <mat-checkbox [checked]="item.done" 
+                         (change)="checkmarkChanged(item)"
+                         [disabled]="selectedIndex >= 0"
+                         color="primary">
+              <span [class.completed]="item.done">{{ item.description }}</span>
             </mat-checkbox>
           </div>
 
-          <div *ngIf="selectedIndex < 0">
-            <mat-icon *ngIf="!item.done" class="edit" (click)="editItem(i, item)">edit</mat-icon>
-            <mat-icon class="delete" (click)="deleteConfirmation(i)">delete</mat-icon>
+          <div class="task-actions" *ngIf="selectedIndex === -1">
+            <button mat-icon-button 
+                    (click)="editItem(i, item)"
+                    *ngIf="!item.done"
+                    aria-label="Edit task">
+              <mat-icon class="edit">edit</mat-icon>
+            </button>
+            <button mat-icon-button 
+                    (click)="deleteConfirmation(i)"
+                    aria-label="Delete task">
+              <mat-icon class="delete">delete</mat-icon>
+            </button>
           </div>
         </div>
 
-        <div *ngIf="todoList().length === 0" class="error-container">
-          <p>No Tasks yet</p>
+        <div *ngIf="todoList.length === 0" class="empty-state">
+          <mat-icon>checklist</mat-icon>
+          <p>No tasks found. Add your first task above!</p>
         </div>
       </div>
     </mat-card-content>
